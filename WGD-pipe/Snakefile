@@ -1,0 +1,21 @@
+configfile: 'config.yaml'
+
+include: 'RD_6F_correction.rules'
+
+import pandas as pd
+
+with open(config['sample_list']) as pin:
+	SAMPLES = [line.strip() for line in pin.readlines()]
+
+with open(config['contig']) as pin:
+	CHROMS=[line.strip().split()[0] for line in pin.readlines()]
+
+wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')',
+		chrom = '(' + '|'.join(CHROMS) + ')'
+
+
+rule all:
+	input:
+		expand('bincov_correct_logs/{sample}.txt',sample=SAMPLES)
+

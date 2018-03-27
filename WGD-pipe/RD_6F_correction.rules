@@ -1,0 +1,169 @@
+"""
+6F Correcton
+Xuefang Zhao <xzhao12@mgh.harvard.edu>
+
+run 6-F correction on bincov files
+"""
+
+#Step 1: 6F correction
+script_step1 = 'src/multiCorrection.R/'
+
+with open(config['sample_list']) as fin:
+    SAMPLES = [line.strip() for line in fin]
+
+with open(config['contig']) as fin:
+	CHROMS=[line.strip().split()[0] for line in fin]
+
+wildcard_constraints:
+	sample = '(' + '|'.join(SAMPLES) + ')',
+	chrom = '(' + '|'.join(CHROMS) + ')'
+
+input_path='6F_metadata_ref'
+output_path='bincov_corrected'
+
+rule run_step1:
+	input:
+		'6F_metadata_ref/RD_multiCorrection.{sample}.txt'
+	output:
+		'bincov_correct_logs/{sample}.txt'
+	wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')',
+		chrom = '(' + '|'.join(CHROMS) + ')'
+	shell:
+		"""
+			Rscript src/multiCorrection.R -z {input}
+		"""
+
+
+# Step 2: Run WGD scoring model
+
+## Step 2.1: Generate a WGD scoring input file per sample.
+
+input_path='bincov_corrected'
+
+rule run_step2_1:
+	wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')'
+	input:
+		expand('bincov_corrected/{{sample}}.{chrom}.bed.gz', chrom=CHROMS)
+	output:
+		adjusted_bed='bincov_corrected/{sample}.6F_adjusted.binCov.bed.gz'
+	shell:
+		"""
+			zcat {input} | bedtools intersect -f 1.0 -r -wa -a - \
+			-b config['ref_step2_1'] |bgzip > \
+			{output.adjusted_bed}
+		"""
+
+rule write_WGD_scoring_bins_list:
+	wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')'
+	input:
+		'bincov_corrected/{sample}.6F_adjusted.binCov.bed.gz'
+	output:
+		'ref/WGD_scoring.makeMatrix_input.txt'
+	shell:
+		"""
+			echo -e '{sample}\t{output}' >> {output} 
+		"""
+
+## Step 2.2: Combine WGD scoring input files across all samples into a WGD scoring matrix. 
+
+
+rule run_step2_2:
+	input:
+		'ref/WGD_scoring.makeMatrix_input.txt'
+	output:
+		'ref/WGD_scoring_masked.matrix.bed'
+	shell:
+		"""
+			src/makeMatrix.sh -z \
+			-o {output} \
+			-r config['ref_step2_1'] \
+			{input}
+		"""
+
+## Step 2.3: Run the WGD scoring model.
+rule run_step2_3:
+	input:
+		'ref/WGD_scoring_masked.matrix.bed.gz'
+	output:
+		'WGD_model/'
+	shell:
+		"""
+			src/scoreDosageBiases.R -z \
+			-O 	{output} \
+			{input} \
+			config['ref_step2_1']
+		"""	
+
+# Step 3: Run ploidy estimation model
+
+## Step 3.1: Recompress binCov data per sample per chromosome to 1Mb bins. 
+rule run_step3_1:
+	input:
+		'bincov_corrected/{sample}.{chrom}.bed.gz'
+	output:
+		'bincov_corrected/{sample}.{chrom}.1Mb_bins.bed.gz'
+	shell:
+		"""	
+			src/compressCov.sh -N -z -s \
+			-o {output} \
+			{input} \
+			10000
+		"""
+
+## Step 3.2: Combine all recompressed binCov files into a single file per sample. 
+rule run_step3_2:
+	wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')'
+	input:
+		expand('bincov_corrected/{{sample}}.{chrom}.1Mb_bins.bed.gz', chrom=CHROMS)
+	output:
+		'bincov_corrected/{sample}.1Mb_bins.bed.gz'
+	shell:
+		"""
+			zcat {input} | bgzip > {output}
+		"""
+
+rule write_WGD_scoring_1Mb_bins_list:
+	wildcard_constraints:
+		sample = '(' + '|'.join(SAMPLES) + ')'
+	input:
+		'bincov_corrected/{sample}.1Mb_bins.bed.gz'
+	output:
+		'ref/WGD_scoring.makeMatrix_1Mb_input.txt'
+	shell:
+		"""
+			echo -e '{sample}\t{output}' >> {output} 
+		"""
+
+
+## Step 3.3: Create matrix of 1Mb recompressed binCov values across all samples. 
+
+rule run_step3_3:
+	input:
+		'ref/WGD_scoring.makeMatrix_1Mb_input.txt'
+	output:
+		'ref/WGD_scoring_masked.1Mb_matrix.bed'
+	shell:
+		"""
+			src/makeMatrix.sh -z \
+			-o {output} \
+			{input}
+		"""
+
+
+## Step 3.4: Run the ploidy estimation model. 
+rule run_step3_4:
+	input:
+		'ref/WGD_scoring_masked.1Mb_matrix.bed'
+	output:
+		'logs/ploidy_estimate.log'
+	shell:
+		"""
+			src/estimatePloidy.R -z \
+			-O ploidy_estimate/ \
+			{input}
+		"""
+
