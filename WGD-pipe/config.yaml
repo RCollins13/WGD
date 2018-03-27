@@ -1,0 +1,10 @@
+script_step1: 'src/multiCorrection.R'
+input_step1: 'ref/RD_multiCorrection.txt'
+
+ref_step2_1: 'ref/WGD_scoring_mask.6F_adjusted.100bp.h37.bed'
+sample_list: 'ref/Sample.list'
+contig: 'ref/contigs.fai'
+
+corrected_bincov_path: '/data/talkowski/xuefang/data/CommonMind/RD-6F-correction/bincov_corrected/'
+WGD_model_output: 'WGD_model/'
+
