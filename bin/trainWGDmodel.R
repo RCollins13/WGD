@@ -20,31 +20,31 @@ options(stringsAsFactors=F,
         scipen=1000)
 require(optparse)
 
-#Local dev parameters
-WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
-DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
-path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
-PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
-PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
-PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
-PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
-MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
-MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
-MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
-MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
-OUTDIR <- "~/scratch/"
-plotScatters <- T
-args <- list("args"=c(path.to.matrix,OUTDIR),
-             "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
-                            "PCRPLUS_train_2"=PLUS.train.2.in,
-                            "PCRPLUS_train_3"=PLUS.train.3.in,
-                            "PCRPLUS_test_1"=PLUS.test.in,
-                            "PCRMINUS_train_1"=MINUS.train.1.in,
-                            "PCRMINUS_train_2"=MINUS.train.2.in,
-                            "PCRMINUS_train_3"=MINUS.train.3.in,
-                            "PCRMINUS_test_1"=MINUS.test.in,
-                            "plotScatters"=plotScatters))
-opts <- args$options
+# #Local dev parameters
+# WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
+# DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
+# path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
+# PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
+# PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
+# PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
+# PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
+# MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
+# MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
+# MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
+# MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
+# OUTDIR <- "~/scratch/"
+# plotScatters <- T
+# args <- list("args"=c(path.to.matrix,OUTDIR),
+#              "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
+#                             "PCRPLUS_train_2"=PLUS.train.2.in,
+#                             "PCRPLUS_train_3"=PLUS.train.3.in,
+#                             "PCRPLUS_test_1"=PLUS.test.in,
+#                             "PCRMINUS_train_1"=MINUS.train.1.in,
+#                             "PCRMINUS_train_2"=MINUS.train.2.in,
+#                             "PCRMINUS_train_3"=MINUS.train.3.in,
+#                             "PCRMINUS_test_1"=MINUS.test.in,
+#                             "plotScatters"=plotScatters))
+# opts <- args$options
 
 
 #####################
