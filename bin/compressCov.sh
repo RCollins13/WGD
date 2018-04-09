@@ -23,7 +23,7 @@ Optional arguments:
   -h  HELP        Show this help message and exit
   -N  NO HEADER   Input BED file does not have a header (default: has header)
   -s  SUM         Report sum (default: report median)
-  -z  GZIP        Gzip output file
+  -z  BGZIP       Bgzip and tabix output file
   -o  OUTFILE     Output file (default: stdout)
 
 EOF
@@ -115,7 +115,8 @@ done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) >> ${OUTFILE}
 
 #Gzip output if optioned
 if [ ${GZ} == 1 ]; then
-  gzip --force ${OUTFILE}
+  bgzip -f ${OUTFILE}
+  tabix -f ${OUTFILE}
 fi
 
 #Clean up
