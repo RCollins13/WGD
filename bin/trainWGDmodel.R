@@ -20,31 +20,31 @@ options(stringsAsFactors=F,
         scipen=1000)
 require(optparse)
 
-# #Local dev parameters
-# WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
-# DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
-# path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
-# PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
-# PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
-# PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
-# PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
-# MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
-# MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
-# MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
-# MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
-# OUTDIR <- "~/scratch/"
-# plotScatters <- T
-# args <- list("args"=c(path.to.matrix,OUTDIR),
-#              "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
-#                             "PCRPLUS_train_2"=PLUS.train.2.in,
-#                             "PCRPLUS_train_3"=PLUS.train.3.in,
-#                             "PCRPLUS_test_1"=PLUS.test.in,
-#                             "PCRMINUS_train_1"=MINUS.train.1.in,
-#                             "PCRMINUS_train_2"=MINUS.train.2.in,
-#                             "PCRMINUS_train_3"=MINUS.train.3.in,
-#                             "PCRMINUS_test_1"=MINUS.test.in,
-#                             "plotScatters"=plotScatters))
-# opts <- args$options
+#Local dev parameters
+WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
+DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
+path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
+PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
+PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
+PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
+PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
+MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
+MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
+MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
+MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
+OUTDIR <- "~/scratch/"
+plotScatters <- T
+args <- list("args"=c(path.to.matrix,OUTDIR),
+             "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
+                            "PCRPLUS_train_2"=PLUS.train.2.in,
+                            "PCRPLUS_train_3"=PLUS.train.3.in,
+                            "PCRPLUS_test_1"=PLUS.test.in,
+                            "PCRMINUS_train_1"=MINUS.train.1.in,
+                            "PCRMINUS_train_2"=MINUS.train.2.in,
+                            "PCRMINUS_train_3"=MINUS.train.3.in,
+                            "PCRMINUS_test_1"=MINUS.test.in,
+                            "plotScatters"=plotScatters))
+opts <- args$options
 
 
 #####################
@@ -55,11 +55,6 @@ readCov <- function(path,norm=T,tranche=0.999){
   #Read matrix
   cov <- read.table(path.to.matrix,header=T,comment.char="")
   colnames(cov)[1:3] <- c("chr","start","end")
-  
-  # #Count number of zero bins per sample
-  # zeroes <- apply(cov[,-c(1:3)],2,function(vals){
-  #   return(length(which(vals==0)))
-  # })
   
   #Normalize per sample by median, if optioned
   if(norm==T){
@@ -75,9 +70,6 @@ readCov <- function(path,norm=T,tranche=0.999){
   if(!is.na(tranche)){
     #Get percentiles to exclude
     tails <- c((1-tranche)/2,mean(c(1,tranche)))
-    
-    # #Compute mean per sample
-    # sample.means <- apply(cov[,-c(1:3)],2,mean,na.rm=T)
     
     #Remove bins with median cov = 0
     bin.medians <- apply(cov[,-c(1:3)],1,median,na.rm=T)
@@ -342,6 +334,7 @@ minAbsSep <- sapply(1:nrow(cov),function(i){
   return(min(vals))
 })
 #Determine which bins pass minimum absolute separation
+min.sep <- 0.1
 minAbsSep.keep.bins <- which(minAbsSep>min.sep)
 
 #Set p-value cutoff
@@ -393,10 +386,102 @@ balanced.bins.sorted.keep <- sort(unique(c(plus.bins.shuffled.keep,
                                            minus.bins.shuffled.keep)))
 WGD.mask <- WGD.mask[balanced.bins.sorted.keep,]
 
+#####Compute difference between testing sets
+if(!is.null(PLUS.test) & !is.null(MINUS.test)){
+  #Subset coverage file to test sample sets
+  test.cov <- cov[final.keep.bins[balanced.bins.sorted.keep],]
+  
+  #Compute mean sep between PCR+ and PCR-
+  test.weights <- sapply(1:nrow(test.cov),function(i){
+    PLUS.vals <- as.numeric(test.cov[i,which(colnames(test.cov) %in% PLUS.test)])
+    MINUS.vals <- as.numeric(test.cov[i,which(colnames(test.cov) %in% MINUS.test)])
+    return(mean(PLUS.vals,na.rm=T)-mean(MINUS.vals,na.rm=T))
+  })
+}
+
 #####Write final bins to file
 colnames(WGD.mask)[1] <- c("#chr")
 write.table(WGD.mask,paste(OUTDIR,"WGD_mask.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
+
+#####Write WGD training report to file
+logfile <- paste(OUTDIR,"WGD_training_report.txt",sep="")
+write("WGD Dosage Bias Model: Training Report\n",
+      file=logfile)
+write(paste("Completed on ",date(),"\n",sep=""),
+      file=logfile,append=T)
+write(paste("Output directory: ",OUTDIR,"\n",sep=""),
+      file=logfile,append=T)
+write(paste("Coverage matrix: ",path.to.matrix,"\n",sep=""),
+      file=logfile,append=T)
+write(paste("Training Sets:\n",
+            paste(unlist(lapply(1:length(PLUS.train),function(i){
+              return(paste("  -PCR plus training set ",i,
+                           ": n=",prettyNum(length(PLUS.train[[i]]),big.mark=","),
+                           " samples\n","     ",
+                           if(i==1 & !is.null(PLUS.train.1.in)){
+                             paste(PLUS.train.1.in,"\n",sep="")
+                           },
+                           if(i==2 & !is.null(PLUS.train.2.in)){
+                             paste(PLUS.train.2.in,"\n",sep="")
+                           },
+                           if(i==3 & !is.null(PLUS.train.3.in)){
+                             paste(PLUS.train.3.in,"\n",sep="")
+                           },
+                           sep=""))
+            })),collapse=""),
+            paste(unlist(lapply(1:length(MINUS.train),function(i){
+              return(paste("  -PCR minus training set ",i,
+                           ": n=",prettyNum(length(MINUS.train[[i]]),big.mark=","),
+                           " samples\n","     ",
+                           if(i==1 & !is.null(MINUS.train.1.in)){
+                             paste(MINUS.train.1.in,"\n",sep="")
+                           },
+                           if(i==2 & !is.null(MINUS.train.2.in)){
+                             paste(MINUS.train.2.in,"\n",sep="")
+                           },
+                           if(i==3 & !is.null(MINUS.train.3.in)){
+                             paste(MINUS.train.3.in,"\n",sep="")
+                           },
+                           sep=""))
+            })),collapse=""),
+            sep=""),
+      file=logfile,append=T)
+write(paste("Breakdown of bins:\n",
+            paste("  -Bins in initial matrix: n=",
+                  prettyNum(nrow(cov),big.mark=","),
+                  " (","100%",")\n",sep=""),
+            paste("  -Bins meeting selection criteria: n=",
+                  prettyNum(length(final.keep.bins),big.mark=","),
+                  " (",round(100*length(final.keep.bins)/nrow(cov),digits=1),"%)\n",sep=""),
+            paste("  -Final bins retained after plus/minus weight balancing: n=",
+                  prettyNum(nrow(WGD.mask),big.mark=","),
+                  " (",round(100*nrow(WGD.mask)/nrow(cov),digits=1),"%)\n",sep=""),
+            sep=""),
+      file=logfile,append=T)
+if(!is.null(PLUS.test) & !is.null(MINUS.test)){
+  write(paste("Testing Sets:\n",
+              paste("  -PCR plus testing set: n=",
+                    prettyNum(length(PLUS.test[[i]]),big.mark=","),
+                    " samples\n","     ",
+                    PLUS.test.in,"\n",sep=""),
+              paste("  -PCR minus testing set: n=",
+                    prettyNum(length(MINUS.test[[i]]),big.mark=","),
+                    " samples\n","     ",
+                    MINUS.test.in,"\n",sep=""),
+              sep=""),
+        file=logfile,append=T)
+  write(paste("Bin performance on testing sets:\n",
+              paste("  -Pearson correlation of bin weights to observed coverage differences: R=",
+                    round(as.numeric(cor.test(WGD.mask$weight,test.weights)$estimate),digits=4),
+                    " (P=",format(cor.test(WGD.mask$weight,test.weights)$p.value,scientific=T),")\n",sep=""),
+              paste("  -Spearman correlation of bin weights to observed coverage differences: Rho=",
+                    round(as.numeric(cor.test(WGD.mask$weight,test.weights,method="spearman")$estimate),digits=4),
+                    " (P=",format(cor.test(WGD.mask$weight,test.weights,method="spearman")$p.value,scientific=T),")\n",sep=""),
+              sep=""),
+        file=logfile,append=T)
+}
+
 
 
 ###################
@@ -443,18 +528,7 @@ if(plotScatters==T){
 }
 
 
-#####Compute difference between testing sets
-if(!is.null(PLUS.test) & !is.null(MINUS.test)){
-  #Subset coverage file to test sample sets
-  test.cov <- cov[final.keep.bins[balanced.bins.sorted.keep],]
-  
-  #Compute mean sep between PCR+ and PCR-
-  test.weights <- sapply(1:nrow(test.cov),function(i){
-    PLUS.vals <- as.numeric(test.cov[i,which(colnames(test.cov) %in% PLUS.test)])
-    MINUS.vals <- as.numeric(test.cov[i,which(colnames(test.cov) %in% MINUS.test)])
-    return(mean(PLUS.vals,na.rm=T)-mean(MINUS.vals,na.rm=T))
-  })
-}
+
 cor.test(WGD.mask$weight,test.weights,method="spearman")
 cor.test(WGD.mask$weight,test.weights)
 

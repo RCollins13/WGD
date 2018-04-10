@@ -116,7 +116,7 @@ done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) >> ${OUTFILE}
 #Gzip output if optioned
 if [ ${GZ} == 1 ]; then
   bgzip -f ${OUTFILE}
-  tabix -f ${OUTFILE}
+  tabix -f ${OUTFILE}.gz
 fi
 
 #Clean up
