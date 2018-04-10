@@ -20,31 +20,31 @@ options(stringsAsFactors=F,
         scipen=1000)
 require(optparse)
 
-#Local dev parameters
-WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
-DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
-path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
-PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
-PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
-PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
-PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
-MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
-MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
-MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
-MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
-OUTDIR <- "~/scratch/"
-plotScatters <- T
-args <- list("args"=c(path.to.matrix,OUTDIR),
-             "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
-                            "PCRPLUS_train_2"=PLUS.train.2.in,
-                            "PCRPLUS_train_3"=PLUS.train.3.in,
-                            "PCRPLUS_test_1"=PLUS.test.in,
-                            "PCRMINUS_train_1"=MINUS.train.1.in,
-                            "PCRMINUS_train_2"=MINUS.train.2.in,
-                            "PCRMINUS_train_3"=MINUS.train.3.in,
-                            "PCRMINUS_test_1"=MINUS.test.in,
-                            "plotScatters"=plotScatters))
-opts <- args$options
+# #Local dev parameters
+# WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
+# DATADIR <- paste(WRKDIR,"WGD_training_localData/",sep="")
+# path.to.matrix <- paste(DATADIR,"gnomAD_v2.6F_adjCov.WGD_scoring_masked.100bp.matrix.bed.gz",sep="")
+# PLUS.train.1.in <- paste(DATADIR,"PCRPLUS.train_1.samples.list",sep="")
+# PLUS.train.2.in <- paste(DATADIR,"PCRPLUS.train_2.samples.list",sep="")
+# PLUS.train.3.in <- paste(DATADIR,"PCRPLUS.train_3.samples.list",sep="")
+# PLUS.test.in <- paste(DATADIR,"PCRPLUS.test.samples.list",sep="")
+# MINUS.train.1.in <- paste(DATADIR,"PCRFREE.train_1.samples.list",sep="")
+# MINUS.train.2.in <- paste(DATADIR,"PCRFREE.train_2.samples.list",sep="")
+# MINUS.train.3.in <- paste(DATADIR,"PCRFREE.train_3.samples.list",sep="")
+# MINUS.test.in <- paste(DATADIR,"PCRFREE.test.samples.list",sep="")
+# OUTDIR <- "~/scratch/"
+# plot <- T
+# args <- list("args"=c(path.to.matrix,OUTDIR),
+#              "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
+#                             "PCRPLUS_train_2"=PLUS.train.2.in,
+#                             "PCRPLUS_train_3"=PLUS.train.3.in,
+#                             "PCRPLUS_test_1"=PLUS.test.in,
+#                             "PCRMINUS_train_1"=MINUS.train.1.in,
+#                             "PCRMINUS_train_2"=MINUS.train.2.in,
+#                             "PCRMINUS_train_3"=MINUS.train.3.in,
+#                             "PCRMINUS_test_1"=MINUS.test.in,
+#                             "plot"=plot))
+# opts <- args$options
 
 
 #####################
@@ -207,11 +207,12 @@ plotScatterSingle <- function(xvals.all,yvals.all,
   }
 }
 #Plot evidence for a single bin (series of swarmplots)
-plotBinEvidence <- function(chr,start,end,
+plotBinEvidence <- function(chr,start,end,title=NULL,
                             col.PLUS="blue",col.MINUS="red",
                             ylims=c(1,3)){
   #Load required library
   require(beeswarm)
+  require(vioplot)
   
   #Make master list of groups to plot
   plot.groups <- c(lapply(PLUS.train,as.character),lapply(MINUS.train,as.character))
@@ -225,14 +226,16 @@ plotBinEvidence <- function(chr,start,end,
     plot.groups <- c(plot.groups,list(as.character(MINUS.test)))
     names(plot.groups)[length(plot.groups)] <- "MINUS.test"
   }
+  n.groups <- length(plot.groups)
   
   #Prep plot area
-  
+  par(mar=c(2,3,2,1))
   plot(x=c(0,n.groups),y=ylims,type="n",
        xaxt="n",yaxt="n",xlab="",ylab="",xaxs="i",yaxs="i")
   
   #Add gridlines
   abline(h=axTicks(2),col="gray80")
+  abline(h=2)
   
   #Iterate over groups & plot swarms per group
   sapply(1:n.groups,function(i){
@@ -247,12 +250,23 @@ plotBinEvidence <- function(chr,start,end,
       plot.col <- col.MINUS
     }
     
-    #Plot swarm
+    #Plot vioplot & swarm
+    vioplot(vals,add=T,at=i-0.5,drawRect=F,col=NA,wex=0.5,border=plot.col)
     beeswarm(vals,add=T,at=i-0.5,corral="wrap",corralWidth=0.8,
              pch=19,cex=0.7,col=plot.col)
+    
+    #Add mean per group
+    points(x=i-0.5,y=mean(vals,na.rm=T),pch=23,bg="white",lwd=4,cex=2)
+    points(x=i-0.5,y=mean(vals,na.rm=T),pch=18,col=plot.col)
   })
   
-  
+  #Add axis labels & title
+  axis(1,at=(1:n.groups)-0.5,tick=F,cex.axis=0.8,
+       labels=names(plot.groups),line=-0.9)
+  axis(2,at=axTicks(2),labels=NA)
+  axis(2,at=axTicks(2),tick=F,line=-0.4,las=2,cex.axis=0.8)
+  mtext(2,text="Estimated Copy Number",line=2)
+  mtext(3,line=0,text=title,font=2)
 }
 
 
@@ -285,7 +299,7 @@ option_list <- list(
   make_option(c("--PCRMINUS_test"), type="character", default=NULL,
               help="path to list of PCRMINUS testing samples [OPTIONAL; default %default]", 
               metavar="character"),
-  make_option(c("--plotScatters"), type="logical", default=TRUE,
+  make_option(c("--plot"), type="logical", default=TRUE,
               help="generate scatterplots of coverage correlations [default %default]", 
               metavar="logical")
 )
@@ -316,7 +330,7 @@ MINUS.train.1.in <- opts$PCRMINUS_train_1
 MINUS.train.2.in <- opts$PCRMINUS_train_2
 MINUS.train.3.in <- opts$PCRMINUS_train_3
 MINUS.test.in <- opts$PCRMINUS_test
-plotScatters <- opts$plotScatters
+plot <- opts$plot
 
 #####Reads data
 #Coverage matrix
@@ -563,7 +577,7 @@ lapply(1:length(PLUS.train),function(iPLUS){
 ###################
 #####Plotting block
 ###################
-if(plotScatters==T){
+if(plot==T){
   #####Grid of training set correlations
   png(paste(OUTDIR,"WGD_model.training_set_correlations.png",sep=""),
       width=400*length(PLUS.train),height=400*length(MINUS.train),
@@ -610,6 +624,19 @@ if(plotScatters==T){
                     yvals.final=test.weights,
                     xaxis.bottom=T,yaxis.left=T,spline=F,
                     axis.lims=c(-1,1),highlight="darkorchid")
+  dev.off()
+  #####Create pdf book of swarmplots per bin
+  pdf(paste(OUTDIR,"final_bin_evidence.pdf",sep=""),
+      height=6,width=10)
+  sapply(1:nrow(WGD.mask),function(i){
+    chr <- WGD.mask[i,1]
+    start <- WGD.mask[i,2]
+    end <- WGD.mask[i,3]
+    plotBinEvidence(chr=chr,start=start,end=end,
+                    title=paste("Final WGD Scoring Bin: ",
+                                chr,":",prettyNum(start,big.mark=","),
+                                "-",prettyNum(end,big.mark=","),"bp",sep=""))
+  })
   dev.off()
 }
 
