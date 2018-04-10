@@ -213,7 +213,7 @@ plotScores <- function(scores,label.outliers=T){
 
   #Add legend
   legend("topright",pch=21,pt.bg=c("blue","red"),
-         legend=c(expression(paste(delta,">0",sep="")),expression(paste(delta,"<0",sep=""))),
+         legend=c("Score > 0","Score < 0"),
          border=NA,bty="n",bg="white",cex=0.8,pt.cex=1.7)
 
   ###Panel b: ordered dotplot with labeled outliers

@@ -227,11 +227,30 @@ plotBinEvidence <- function(chr,start,end,
   }
   
   #Prep plot area
-  n.groups <- length(plot.groups)
+  
   plot(x=c(0,n.groups),y=ylims,type="n",
        xaxt="n",yaxt="n",xlab="",ylab="",xaxs="i",yaxs="i")
   
-  #Iterate over groups & plot 
+  #Add gridlines
+  abline(h=axTicks(2),col="gray80")
+  
+  #Iterate over groups & plot swarms per group
+  sapply(1:n.groups,function(i){
+    #Get coverage values
+    vals <- as.numeric(cov[which(cov$chr==chr & cov$start==start & cov$end==end),
+                       which(colnames(cov) %in% plot.groups[[i]])])
+    
+    #Get color
+    if(length(grep("PLUS",names(plot.groups)[i],fixed=T))>0){
+      plot.col <- col.PLUS
+    }else{
+      plot.col <- col.MINUS
+    }
+    
+    #Plot swarm
+    beeswarm(vals,add=T,at=i-0.5,corral="wrap",corralWidth=0.8,
+             pch=19,cex=0.7,col=plot.col)
+  })
   
   
 }
