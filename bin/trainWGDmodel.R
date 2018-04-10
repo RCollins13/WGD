@@ -126,6 +126,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
                               xvals.final,yvals.final,
                               highlight="orangered",
                               axis.lims=c(1,3),
+                              spline=F,cor=T,
                               xaxis.bottom=F,xaxis.top=F,
                               yaxis.left=F,yaxis.right=F){
   #Prep plot area
@@ -156,7 +157,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
   plot(x=xvals.all,y=yvals.all,type="n",
        xaxt="n",yaxt="n",xlab="",ylab="",
        xlim=axis.lims,ylim=axis.lims)
-  abline(h=2,v=2,col="gray30")
+  abline(h=mean(axis.lims),v=mean(axis.lims),col="gray30")
   
   #Prep gradient based on distance percentiles
   gradientCols <- rev(colorRampPalette(c("#003A94","#3361A9","#6689BF",
@@ -172,6 +173,9 @@ plotScatterSingle <- function(xvals.all,yvals.all,
   
   #Add points & crosshairs
   points(xvals.all,yvals.all,col=point.dist.cols,pch=19,cex=0.2)
+  if(spline==T){
+    points(smooth.spline(xvals.all,yvals.all),type="l")
+  }
   points(center[1],center[2],pch=9)
   points(xvals.final,yvals.final,col=highlight,pch=19,cex=0.4)
   
@@ -192,6 +196,44 @@ plotScatterSingle <- function(xvals.all,yvals.all,
     axis(4,at=axTicks(3),labels=NA)
     axis(4,at=axTicks(2),tick=F,line=-0.4,cex.axis=0.8,las=2)
   }
+  
+  #Add correlation coefficient to plot, if optioned
+  if(cor==T){
+    text(x=par("usr")[1],
+         y=par("usr")[3]+(0.875*(par("usr")[4]-par("usr")[3])),
+         pos=4,labels=paste("R=",round(cor.test(xvals.all,yvals.all)$estimate,digits=3),"\n",
+                            "Rho=",round(cor.test(xvals.all,yvals.all,method="spearman")$estimate,digits=3),sep=""),
+         cex=0.8)
+  }
+}
+#Plot evidence for a single bin (series of swarmplots)
+plotBinEvidence <- function(chr,start,end,
+                            col.PLUS="blue",col.MINUS="red",
+                            ylims=c(1,3)){
+  #Load required library
+  require(beeswarm)
+  
+  #Make master list of groups to plot
+  plot.groups <- c(lapply(PLUS.train,as.character),lapply(MINUS.train,as.character))
+  names(plot.groups) <- c(paste("PLUS.train.",1:length(PLUS.train),sep=""),
+                          paste("MINUS.train.",1:length(MINUS.train),sep=""))
+  if(!is.null(PLUS.test)){
+    plot.groups <- c(plot.groups,list(as.character(PLUS.test)))
+    names(plot.groups)[length(plot.groups)] <- "PLUS.test"
+  }
+  if(!is.null(MINUS.test)){
+    plot.groups <- c(plot.groups,list(as.character(MINUS.test)))
+    names(plot.groups)[length(plot.groups)] <- "MINUS.test"
+  }
+  
+  #Prep plot area
+  n.groups <- length(plot.groups)
+  plot(x=c(0,n.groups),y=ylims,type="n",
+       xaxt="n",yaxt="n",xlab="",ylab="",xaxs="i",yaxs="i")
+  
+  #Iterate over groups & plot 
+  
+  
 }
 
 
@@ -399,12 +441,16 @@ if(!is.null(PLUS.test) & !is.null(MINUS.test)){
   })
 }
 
-#####Write final bins to file
+
+########################
+#####Write final outputs
+########################
+#Write final bins to file
 colnames(WGD.mask)[1] <- c("#chr")
 write.table(WGD.mask,paste(OUTDIR,"WGD_mask.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 
-#####Write WGD training report to file
+#Write WGD training report to file
 logfile <- paste(OUTDIR,"WGD_training_report.txt",sep="")
 write("WGD Dosage Bias Model: Training Report\n",
       file=logfile)
@@ -482,6 +528,17 @@ if(!is.null(PLUS.test) & !is.null(MINUS.test)){
         file=logfile,append=T)
 }
 
+#Write one file for each training set comparison
+lapply(1:length(PLUS.train),function(iPLUS){
+  lapply(1:length(MINUS.train),function(iMINUS){
+    #Clean table
+    dat.out <- cbind(cov[,1:3],train.res[[iPLUS]][[iMINUS]])
+    colnames(dat.out) <- c("#chr","start","end","PLUS_mean","MINUS_mean","weight","tTest_pVal")
+    write.table(dat.out,
+                paste(OUTDIR,"WGD_training.PLUS_",iPLUS,"_vs_MINUS_",iMINUS,".bed",sep=""),
+                col.names=T,row.names=F,sep="\t",quote=F)
+  })
+})
 
 
 ###################
@@ -490,7 +547,7 @@ if(!is.null(PLUS.test) & !is.null(MINUS.test)){
 if(plotScatters==T){
   #####Grid of training set correlations
   png(paste(OUTDIR,"WGD_model.training_set_correlations.png",sep=""),
-      width=400*length(PLUS.train),height=300*length(MINUS.train),
+      width=400*length(PLUS.train),height=400*length(MINUS.train),
       res=300)
   par(mfrow=c(length(PLUS.train),length(MINUS.train)))
   #Iterate over pairs of training sets
@@ -525,13 +582,17 @@ if(plotScatters==T){
     })
   })
   dev.off()
+  #####Grid of training weights vs testing weights
+  png(paste(OUTDIR,"WGD_model.training_weights_vs_testing_weights.png",sep=""),
+      width=900,height=900,res=300)
+  plotScatterSingle(xvals.all=WGD.mask$weight,
+                    yvals.all=test.weights,
+                    xvals.final=WGD.mask$weight,
+                    yvals.final=test.weights,
+                    xaxis.bottom=T,yaxis.left=T,spline=F,
+                    axis.lims=c(-1,1),highlight="darkorchid")
+  dev.off()
 }
-
-
-
-cor.test(WGD.mask$weight,test.weights,method="spearman")
-cor.test(WGD.mask$weight,test.weights)
-
 
 
 
