@@ -572,6 +572,14 @@ lapply(1:length(PLUS.train),function(iPLUS){
                 col.names=T,row.names=F,sep="\t",quote=F)
   })
 })
+#Write file with training weights vs testing weights
+if(!is.null(PLUS.test) & !is.null(MINUS.test)){
+  dat.out <- cbind(WGD.mask,test.weights)
+  colnames(dat.out) <- c("#chr","start","end","fitted_training_weight","observed_testing_weight")
+  write.table(dat.out,
+              paste(OUTDIR,"WGD_training_vs_testing_weights.bed",sep=""),
+              col.names=T,row.names=F,sep="\t",quote=F)
+}
 
 
 ###################
