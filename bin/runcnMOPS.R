@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Code copyright (c) 2017 Ryan L. Collins
+# Code copyright (c) 2017-2018 Ryan L. Collins
 # Distributed under terms of the MIT License (see LICENSE)
 # Contact: Ryan L. Collins <rlcollins@g.harvard.edu>
 
@@ -12,7 +12,7 @@ require(optparse)
 ####List of command-line options
 option_list <- list(
   make_option(c("-I", "--ID"), type="character", default="CNMOPS",
-              help="sample group ID (used for output filenames) [default %default]", 
+              help="sample group ID (used for output filenames) [default %default]",
               metavar="character")
 )
 
@@ -51,12 +51,12 @@ dataframe2GRanges <- function (df, keepColumns = TRUE, ignoreStrand = TRUE){
       df$Strand <- Strand
     }
     gr <- GRanges(seqnames=df$Chr,
-                  ranges=IRanges(start=df$Start, 
+                  ranges=IRanges(start=df$Start,
                                  end=df$Stop),
                   strand=df$Strand)
   }else{
     gr <- GRanges(seqnames=df$Chr,
-                  ranges=IRanges(start=df$Start, 
+                  ranges=IRanges(start=df$Start,
                                  end=df$Stop))
   }
   if (keepColumns){
@@ -74,6 +74,13 @@ cov[2:ncol(cov)] <- apply(cov[2:ncol(cov)],2,function(vals){
 })
 colnames(cov)[1:3] <- c("Chr","Start","Stop")
 cov[is.na(cov)] <- 0
+#Exclude samples with median coverage = 0
+median.per.sample <- apply(cov[,-c(1:3)],2,median,na.rm=T)
+samples.to.exclude <- which(median.per.sample==0)+3
+cat(paste("\nEXCLUDING SAMPLES DUE TO NO COVERAGE:\n",
+          paste(colnames(cov)[samples.to.exclude],collapse="\n"),sep=""))
+cov <- cov[,-samples.to.exclude]
+#Coerce to GRange
 cov <- dataframe2GRanges(cov)
 
 #Runs cn.mops
