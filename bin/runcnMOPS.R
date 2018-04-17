@@ -80,6 +80,10 @@ samples.to.exclude <- which(median.per.sample==0)+3
 cat(paste("\nEXCLUDING SAMPLES DUE TO NO COVERAGE:\n",
           paste(colnames(cov)[samples.to.exclude],collapse="\n"),sep=""))
 cov <- cov[,-samples.to.exclude]
+#Check to make sure at least three samples don't have zero coverage
+if(ncol(cov)<6){
+  stop("runcnMOPS.R: Less than three samples retained in coverage matrix after filtering on median coverage")
+}
 #Coerce to GRange
 cov <- dataframe2GRanges(cov)
 
