@@ -14,13 +14,13 @@
 ####################################
 #####Set parameters & load libraries
 ####################################
-options(scipen=1000,stringsAsFactors=F)
+options(scipen=1000,stringsAsFactors=F,check.names=F)
 
 ############################################
 #####Helper function to load coverage matrix
 ############################################
 readMatrix <- function(INFILE){
-  dat <- read.table(INFILE,comment.char="",header=T)
+  dat <- read.table(INFILE,comment.char="",header=T,check.names=F)
   colnames(dat)[1] <- "Chr"
   dat[,-1] <- t(apply(dat[,-1],1,as.numeric))
   return(dat)
