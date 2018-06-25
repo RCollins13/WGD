@@ -46,7 +46,7 @@ require(optparse)
 #                             "plot"=plot))
 # opts <- args$options
 
-# # #Local dev parameters (hg38)
+# #Local dev parameters (hg38)
 # WRKDIR <- "~/scratch/hg38_WGD_model_tmp/"
 # DATADIR <- "~/scratch/hg38_WGD_model_files/"
 # path.to.matrix <- paste(DATADIR,"test.bed.gz",sep="")
@@ -338,6 +338,10 @@ if(length(args$args) != 2){
 #At least one training set for PCRPLUS and PCRMINUS
 if(any(is.null(c(opts$PCRPLUS_train_1,opts$PCRMINUS_train_1)))){
   stop("At least one training set must be supplied for PCRPLUS and PCRMINUS\n")
+}
+#Create OUTDIR, if necessary
+if(!dir.exists(OUTDIR)){
+  dir.create(OUTDIR)
 }
 
 #####Writes args & opts to vars
