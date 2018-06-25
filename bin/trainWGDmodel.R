@@ -46,6 +46,27 @@ require(optparse)
 #                             "plot"=plot))
 # opts <- args$options
 
+# # #Local dev parameters (hg38)
+# WRKDIR <- "~/scratch/hg38_WGD_model_tmp/"
+# DATADIR <- "~/scratch/hg38_WGD_model_files/"
+# path.to.matrix <- paste(DATADIR,"test.bed.gz",sep="")
+# PLUS.train.1.in <- paste(DATADIR,"pcr+training.txt",sep="")
+# MINUS.train.1.in <- paste(DATADIR,"pcr-train1.txt",sep="")
+# MINUS.train.2.in <- paste(DATADIR,"pcr-train2.txt",sep="")
+# MINUS.train.3.in <- paste(DATADIR,"pcr-train3.txt",sep="")
+# PLUS.test.in <- paste(DATADIR,"pcr+testing.txt",sep="")
+# MINUS.test.in <- paste(DATADIR,"pcr-test.txt",sep="")
+# OUTDIR <- WRKDIR
+# plot <- T
+# args <- list("args"=c(path.to.matrix,OUTDIR),
+#              "options"=list("PCRPLUS_train_1"=PLUS.train.1.in,
+#                             "PCRPLUS_test_1"=PLUS.test.in,
+#                             "PCRMINUS_train_1"=MINUS.train.1.in,
+#                             "PCRMINUS_train_2"=MINUS.train.2.in,
+#                             "PCRMINUS_train_3"=MINUS.train.3.in,
+#                             "PCRMINUS_test_1"=MINUS.test.in,
+#                             "plot"=plot))
+# opts <- args$options
 
 #####################
 #####Helper functions
@@ -55,7 +76,7 @@ readCov <- function(path,norm=T,tranche=0.999){
   #Read matrix
   cov <- read.table(path.to.matrix,header=T,comment.char="")
   colnames(cov)[1:3] <- c("chr","start","end")
-  
+
   #Normalize per sample by median, if optioned
   if(norm==T){
     cov[,-c(1:3)] <- apply(cov[,-c(1:3)],2,function(vals){
@@ -65,22 +86,22 @@ readCov <- function(path,norm=T,tranche=0.999){
       return(vals)
     })
   }
-  
+
   #Exclude outlier bins, if optioned
   if(!is.na(tranche)){
     #Get percentiles to exclude
     tails <- c((1-tranche)/2,mean(c(1,tranche)))
-    
+
     #Remove bins with median cov = 0
     bin.medians <- apply(cov[,-c(1:3)],1,median,na.rm=T)
     cov <- cov[which(bin.medians>0),]
-    
+
     #Remove bins in tails of mean cov distribution
     bin.means <- apply(cov[,-c(1:3)],1,mean,na.rm=T)
     cutoffs <- quantile(x=bin.means,probs=tails)
     cov <- cov[which(bin.means>=cutoffs[1] & bin.means<=cutoffs[2]),]
   }
-  
+
   #Return cleaned coverage
   return(cov)
 }
@@ -90,7 +111,7 @@ covStatsSingle <- function(valsA,valsB){
   mA <- mean(valsA,na.rm=T)
   mB <- mean(valsB,na.rm=T)
   sep <- mA-mB
-  
+
   #Format & return results
   return(c(mA,mB,sep))
 }
@@ -99,7 +120,7 @@ covTest <- function(lA,lB,cov,min.sep=0.1){
   #Get indexes
   iA <- which(colnames(cov) %in% lA)
   iB <- which(colnames(cov) %in% lB)
-  
+
   #Iterate over all bins and get stats
   stats <- as.data.frame(t(sapply(1:nrow(cov),function(i){
     covStatsSingle(as.numeric(cov[i,iA]),
@@ -107,17 +128,17 @@ covTest <- function(lA,lB,cov,min.sep=0.1){
   })))
   colnames(stats) <- c("meanA","meanB","sep")
   stats$pval <- NA
-  
+
   #Determine which bins meet criteria for t-test
-  test.bins <- which(abs(stats$sep)>=min.sep & 
-                       ((stats$meanA>=2 & stats$meanB<=2) | 
+  test.bins <- which(abs(stats$sep)>=min.sep &
+                       ((stats$meanA>=2 & stats$meanB<=2) |
                           (stats$meanA<=2 & stats$meanB>=2)))
-  
+
   #Iterate over all bins in cov & run t-test if conditions are met
   stats$pval[test.bins] <- sapply(test.bins,function(i){
     return(t.test(as.numeric(cov[i,iA]),as.numeric(cov[i,iB]))$p.value)
   })
-  
+
   #Return stats
   return(stats)
 }
@@ -130,7 +151,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
                               xaxis.bottom=F,xaxis.top=F,
                               yaxis.left=F,yaxis.right=F){
   #Prep plot area
-  if((xaxis.bottom==T & xaxis.top==T) | 
+  if((xaxis.bottom==T & xaxis.top==T) |
      (yaxis.left==T & yaxis.right==T)){
     par(mar=rep(1.5,4))
   }else{
@@ -158,7 +179,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
        xaxt="n",yaxt="n",xlab="",ylab="",
        xlim=axis.lims,ylim=axis.lims)
   abline(h=mean(axis.lims),v=mean(axis.lims),col="gray30")
-  
+
   #Prep gradient based on distance percentiles
   gradientCols <- rev(colorRampPalette(c("#003A94","#3361A9","#6689BF",
                                          "#99B0D4","#CCD8EA","white"))(101))
@@ -170,7 +191,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
   point.dist.cols <- unlist(sapply(point.dist.pct,function(k){
     return(gradientCols[k+1])
   }))
-  
+
   #Add points & crosshairs
   points(xvals.all,yvals.all,col=point.dist.cols,pch=19,cex=0.2)
   if(spline==T){
@@ -178,7 +199,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
   }
   points(center[1],center[2],pch=9)
   points(xvals.final,yvals.final,col=highlight,pch=19,cex=0.4)
-  
+
   #Add axes, if optioned
   if(xaxis.bottom==T){
     axis(1,at=axTicks(1),labels=NA)
@@ -196,7 +217,7 @@ plotScatterSingle <- function(xvals.all,yvals.all,
     axis(4,at=axTicks(3),labels=NA)
     axis(4,at=axTicks(2),tick=F,line=-0.4,cex.axis=0.8,las=2)
   }
-  
+
   #Add correlation coefficient to plot, if optioned
   if(cor==T){
     text(x=par("usr")[1],
@@ -213,7 +234,7 @@ plotBinEvidence <- function(chr,start,end,title=NULL,
   #Load required library
   require(beeswarm)
   require(vioplot)
-  
+
   #Make master list of groups to plot
   plot.groups <- c(lapply(PLUS.train,as.character),lapply(MINUS.train,as.character))
   names(plot.groups) <- c(paste("PLUS.train.",1:length(PLUS.train),sep=""),
@@ -227,39 +248,39 @@ plotBinEvidence <- function(chr,start,end,title=NULL,
     names(plot.groups)[length(plot.groups)] <- "MINUS.test"
   }
   n.groups <- length(plot.groups)
-  
+
   #Prep plot area
   par(mar=c(2,3,2,1))
   plot(x=c(0,n.groups),y=ylims,type="n",
        xaxt="n",yaxt="n",xlab="",ylab="",xaxs="i",yaxs="i")
-  
+
   #Add gridlines
   abline(h=axTicks(2),col="gray80")
   abline(h=2)
-  
+
   #Iterate over groups & plot swarms per group
   sapply(1:n.groups,function(i){
     #Get coverage values
     vals <- as.numeric(cov[which(cov$chr==chr & cov$start==start & cov$end==end),
                        which(colnames(cov) %in% plot.groups[[i]])])
-    
+
     #Get color
     if(length(grep("PLUS",names(plot.groups)[i],fixed=T))>0){
       plot.col <- col.PLUS
     }else{
       plot.col <- col.MINUS
     }
-    
+
     #Plot vioplot & swarm
     vioplot(vals,add=T,at=i-0.5,drawRect=F,col=NA,wex=0.5,border=plot.col)
     beeswarm(vals,add=T,at=i-0.5,corral="wrap",corralWidth=0.8,
              pch=19,cex=0.7,col=plot.col)
-    
+
     #Add mean per group
     points(x=i-0.5,y=mean(vals,na.rm=T),pch=23,bg="white",lwd=4,cex=2)
     points(x=i-0.5,y=mean(vals,na.rm=T),pch=18,col=plot.col)
   })
-  
+
   #Add axis labels & title
   axis(1,at=(1:n.groups)-0.5,tick=F,cex.axis=0.8,
        labels=names(plot.groups),line=-0.9)
@@ -276,31 +297,31 @@ plotBinEvidence <- function(chr,start,end,title=NULL,
 ####List of command-line options
 option_list <- list(
   make_option(c("--PCRPLUS_train_1"), type="character", default=NULL,
-              help="path to list of first PCRPLUS training samples [REQUIRED; default %default]", 
+              help="path to list of first PCRPLUS training samples [REQUIRED; default %default]",
               metavar="character"),
   make_option(c("--PCRPLUS_train_2"), type="character", default=NULL,
-              help="path to list of second PCRPLUS training samples [OPTIONAL; default %default]", 
+              help="path to list of second PCRPLUS training samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--PCRPLUS_train_3"), type="character", default=NULL,
-              help="path to list of third PCRPLUS training samples [OPTIONAL; default %default]", 
+              help="path to list of third PCRPLUS training samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--PCRPLUS_test"), type="character", default=NULL,
-              help="path to list of PCRPLUS testing samples [OPTIONAL; default %default]", 
+              help="path to list of PCRPLUS testing samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--PCRMINUS_train_1"), type="character", default=NULL,
-              help="path to list of first PCRMINUS training samples [REQUIRED; default %default]", 
+              help="path to list of first PCRMINUS training samples [REQUIRED; default %default]",
               metavar="character"),
   make_option(c("--PCRMINUS_train_2"), type="character", default=NULL,
-              help="path to list of second PCRMINUS training samples [OPTIONAL; default %default]", 
+              help="path to list of second PCRMINUS training samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--PCRMINUS_train_3"), type="character", default=NULL,
-              help="path to list of third PCRMINUS training samples [OPTIONAL; default %default]", 
+              help="path to list of third PCRMINUS training samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--PCRMINUS_test"), type="character", default=NULL,
-              help="path to list of PCRMINUS testing samples [OPTIONAL; default %default]", 
+              help="path to list of PCRMINUS testing samples [OPTIONAL; default %default]",
               metavar="character"),
   make_option(c("--plot"), type="logical", default=TRUE,
-              help="generate scatterplots of coverage correlations [default %default]", 
+              help="generate scatterplots of coverage correlations [default %default]",
               metavar="logical")
 )
 ####Get command-line arguments & options
@@ -344,6 +365,7 @@ PLUS.train <- lapply(list(PLUS.train.1.in,PLUS.train.2.in,PLUS.train.3.in),
                          return(NULL)
                        }
                      })
+PLUS.train <- PLUS.train[which(!unlist(lapply(PLUS.train,is.null)))]
 #PCRMINUS training data
 MINUS.train <- lapply(list(MINUS.train.1.in,MINUS.train.2.in,MINUS.train.3.in),
                       function(path){
@@ -353,6 +375,7 @@ MINUS.train <- lapply(list(MINUS.train.1.in,MINUS.train.2.in,MINUS.train.3.in),
                           return(NULL)
                         }
                       })
+MINUS.train <- MINUS.train[which(!unlist(lapply(MINUS.train,is.null)))]
 #PCRPLUS testing data
 if(!is.null(PLUS.test.in)){
   PLUS.test <- read.table(PLUS.test.in,header=F)[,1]
@@ -389,7 +412,7 @@ meanCovs.keep.bins <- apply(meanCovs,1,function(vals){
   #Determine column indexes for PLUS and MINUS training sets
   plus.cols <- grep("PLUS",colnames(meanCovs))
   minus.cols <- grep("MINUS",colnames(meanCovs))
-  if((all(vals[plus.cols]>=2) & all(vals[minus.cols<=2])) | 
+  if((all(vals[plus.cols]>=2) & all(vals[minus.cols<=2])) |
      (all(vals[plus.cols]<=2) & all(vals[minus.cols>=2]))){
     return(TRUE)
   }else{
@@ -421,7 +444,7 @@ sigPcount <- sapply(1:nrow(cov),function(i){
       return(train.res[[iPLUS]][[iMINUS]][i,4])
     })
   })
-  
+
   return(length(which(!is.na(pvals) & pvals<p.cutoff)))
 })
 #Get maximum number of significant p-values
@@ -449,13 +472,15 @@ WGD.mask$weight <- sapply(final.keep.bins,function(i){
   return(weight)
 })
 #Randomly downsample bins so weights are equal
-min.weight.sum <- round(min(sum(abs(WGD.mask$weight[which(WGD.mask$weight>0)])),
-                            sum(abs(WGD.mask$weight[which(WGD.mask$weight<0)]))))
+plus.bins <- which(WGD.mask$weight>0)
+minus.bins <- which(WGD.mask$weight<0)
+min.weight.sum <- floor(min(sum(abs(WGD.mask$weight[plus.bins])),
+                            sum(abs(WGD.mask$weight[minus.bins]))))
 set.seed(123456789)
-plus.bins.shuffled <- sample(which(WGD.mask$weight>0))
+plus.bins.shuffled <- sample(plus.bins)
 plus.bins.shuffled.keep <- plus.bins.shuffled[1:head(which(cumsum(abs(WGD.mask$weight[plus.bins.shuffled]))>min.weight.sum),1)]
 set.seed(123456789)
-minus.bins.shuffled <- sample(which(WGD.mask$weight<0))
+minus.bins.shuffled <- sample(minus.bins)
 minus.bins.shuffled.keep <- minus.bins.shuffled[1:head(which(cumsum(abs(WGD.mask$weight[minus.bins.shuffled]))>min.weight.sum),1)]
 balanced.bins.sorted.keep <- sort(unique(c(plus.bins.shuffled.keep,
                                            minus.bins.shuffled.keep)))
@@ -465,7 +490,7 @@ WGD.mask <- WGD.mask[balanced.bins.sorted.keep,]
 if(!is.null(PLUS.test) & !is.null(MINUS.test)){
   #Subset coverage file to test sample sets
   test.cov <- cov[final.keep.bins[balanced.bins.sorted.keep],]
-  
+
   #Compute mean sep between PCR+ and PCR-
   test.weights <- sapply(1:nrow(test.cov),function(i){
     PLUS.vals <- as.numeric(test.cov[i,which(colnames(test.cov) %in% PLUS.test)])
@@ -588,7 +613,7 @@ if(!is.null(PLUS.test) & !is.null(MINUS.test)){
 if(plot==T){
   #####Grid of training set correlations
   png(paste(OUTDIR,"WGD_model.training_set_correlations.png",sep=""),
-      width=400*length(PLUS.train),height=400*length(MINUS.train),
+      width=400*length(MINUS.train),height=400*length(PLUS.train),
       res=300)
   par(mfrow=c(length(PLUS.train),length(MINUS.train)))
   #Iterate over pairs of training sets
