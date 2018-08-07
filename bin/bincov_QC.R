@@ -27,12 +27,6 @@ opts <- args$options
 ## Calculate number of bins with no values per chromosome 
     bincov <- read.table(args$args[1], header = F, fill=NA)
     bincov_na <- aggregate(V4 ~ V1, data=bincov, function(x) {sum(is.na(x))}, na.action = NULL)
+    bincov_na <- as.data.frame(sum(bincov_na$V4))
     
-    colnames(bincov_na)[colnames(bincov_na)== "V1"]  <- "chr"
-    colnames(bincov_na)[colnames(bincov_na)== "V4"]  <- "num_empty_bins"
-    
-    bincov_na$Sample <- args$args[2]
-    bincov_na <- bincov_na[c("Sample", "chr", "num_empty_bins")]
-    
-    write.table(bincov_na, args$args[3], row.names=F, sep = "\t", quote = F)
-                       
+    write.table(bincov_na, args$args[3], row.names=F, sep = "\t", quote = F, col.names =F)                       
