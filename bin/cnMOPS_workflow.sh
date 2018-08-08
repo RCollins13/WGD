@@ -21,8 +21,8 @@ Optional arguments:
   -r  REBIN     Bin compression ratio (default: 1)
   -o  OUTDIR    Output directory (default: pwd)
   -p  PREFIX    Name attached to all files (default: cnMOPS)
-  -f  NOFORMAT  Do not automatically format output files per sample
-                (default: format them)
+  -f  FORMAT    Automatically format output files per sample
+                (default: do not format them)
   -c  CLEANUP   Automatically delete all intermediate 
                   files (default: keep all intermediate files)
   -x  BLACKLIST Intervals to be hard-filtered from binCov matrix
@@ -40,7 +40,7 @@ PREFIX="cnMOPS"
 CLEANUP=0
 BLACKLIST=0
 SUBTRACT=0
-FORMAT=1
+FORMAT=0
 while getopts ":r:o:p:fcx:S:M:h" opt; do
   case "$opt" in
     h)
@@ -60,7 +60,7 @@ while getopts ":r:o:p:fcx:S:M:h" opt; do
       CLEANUP=1
       ;;
     f)
-      FORMAT=0
+      FORMAT=1
       ;;
     x)
       BLACKLIST=${OPTARG}
