@@ -21,6 +21,8 @@ Optional arguments:
   -r  REBIN     Bin compression ratio (default: 1)
   -o  OUTDIR    Output directory (default: pwd)
   -p  PREFIX    Name attached to all files (default: cnMOPS)
+  -f  NOFORMAT  Do not automatically format output files per sample
+                (default: format them)
   -c  CLEANUP   Automatically delete all intermediate 
                   files (default: keep all intermediate files)
   -x  BLACKLIST Intervals to be hard-filtered from binCov matrix
@@ -38,7 +40,8 @@ PREFIX="cnMOPS"
 CLEANUP=0
 BLACKLIST=0
 SUBTRACT=0
-while getopts ":r:o:p:cx:S:M:h" opt; do
+FORMAT=1
+while getopts ":r:o:p:fcx:S:M:h" opt; do
   case "$opt" in
     h)
       usage
@@ -55,6 +58,9 @@ while getopts ":r:o:p:cx:S:M:h" opt; do
       ;;
     c)
       CLEANUP=1
+      ;;
+    f)
+      FORMAT=0
       ;;
     x)
       BLACKLIST=${OPTARG}
@@ -146,19 +152,21 @@ cut -f1 ${BINCOVS} > ${OUTDIR}/samples.list
 echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
 
 #Format cn.MOPS calls
-echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
-if [ ${SUBTRACT} != "0" ]; then
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  -S ${SUBTRACT} \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-else
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-fi  
+if [ ${FORMAT} -eq 1 ]; then
+  echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
+  if [ ${SUBTRACT} != "0" ]; then
+    ${BIN}/cleancnMOPS.sh -z \
+    -o ${OUTDIR}/calls/ \
+    -S ${SUBTRACT} \
+    ${OUTDIR}/samples.list \
+    ${OUTDIR}/GFFs.list
+  else
+    ${BIN}/cleancnMOPS.sh -z \
+    -o ${OUTDIR}/calls/ \
+    ${OUTDIR}/samples.list \
+    ${OUTDIR}/GFFs.list
+  fi  
+fi
 
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
