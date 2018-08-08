@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] [-S SUBTRACT] BINCOVS
+usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] [-S SUBTRACT] [-M MATRIX] BINCOVS
 
 Wrapper script to run cn.MOPS workflow from a list of binCov input files
 
@@ -26,6 +26,7 @@ Optional arguments:
   -x  BLACKLIST Intervals to be hard-filtered from binCov matrix
   -S  SUBTRACT  Intervals to subtract from any overlapping calls 
                   (e.g. N-masked reference gaps) 
+  -M  MATRIX    Pre-computed binCov matrix (overrides BINCOVS)
 
 EOF
 }
@@ -37,7 +38,7 @@ PREFIX="cnMOPS"
 CLEANUP=0
 BLACKLIST=0
 SUBTRACT=0
-while getopts ":r:o:p:cx:S:h" opt; do
+while getopts ":r:o:p:cx:S:M:h" opt; do
   case "$opt" in
     h)
       usage
@@ -61,6 +62,9 @@ while getopts ":r:o:p:cx:S:h" opt; do
     S)
       SUBTRACT=${OPTARG}
       ;;
+    M)
+      MATRIX=${OPTARG}
+      ;;
   esac
 done
 shift $(( ${OPTIND} - 1))
@@ -70,7 +74,8 @@ BINCOVS=$1
 BIN=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 #Check for required input
-if [ -z ${BINCOVS} ]; then
+if [ -z ${BINCOVS} ] && [ -z ${MATRIX} ]; then
+  echo -e "ERROR | $( date +"%T (%m-%d-%y)" ) | EITHER BINCOVS OR -M MATRIX INPUT REQUIRED. EXITING..."
   usage
   exit 0
 fi
@@ -83,16 +88,26 @@ for DIR in ${OUTDIR} ${OUTDIR}/calls; do
 done
 
 #Creates binCov matrix
-echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | GENERATING COVERAGE MATRIX..."
-if [ ${BLACKLIST} != "0" ]; then
-  ${BIN}/makeMatrix.sh -z \
-  -r ${BLACKLIST} \
-  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
-  ${BINCOVS}
+if [ -z ${MATRIX} ]; then
+  echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | GENERATING COVERAGE MATRIX..."
+  if [ ${BLACKLIST} != "0" ]; then
+    ${BIN}/makeMatrix.sh -z \
+    -r ${BLACKLIST} \
+    -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
+    ${BINCOVS}
+  else
+    ${BIN}/makeMatrix.sh -z \
+    -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
+    ${BINCOVS}
+  fi
 else
-  ${BIN}/makeMatrix.sh -z \
-  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
-  ${BINCOVS}
+  echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | USING PRECOMPUTED BINCOV MATRIX, AS SPECIFIED..."
+  if [ $( file ${MATRIX} | fgrep "gzip" | wc -l ) -gt 0 ]; then
+    cp ${MATRIX} ${OUTDIR}/${PREFIX}.raw_matrix.bed.gz
+  else
+    cp ${MATRIX} ${OUTDIR}/${PREFIX}.raw_matrix.bed
+    bgzip -f ${OUTDIR}/${PREFIX}.raw_matrix.bed
+  fi
 fi
 
 #Recompresses binCov matrix (if optioned)

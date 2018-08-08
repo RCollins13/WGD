@@ -27,7 +27,7 @@ Optional arguments:
   -n  NORMALIZED   Also generate normalized coverage values
   -z  GZIP         Attempt to tar & gzip the output directory
   -C  CRAM         Input file is in CRAM format
-  -i  INDEX        Path to BAM/CRAM index
+  -I  INDEX        Path to BAM/CRAM index
   -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
