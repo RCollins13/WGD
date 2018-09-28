@@ -36,9 +36,9 @@ if(length(args$args) != 2)
 
 # Read matrix
 if(opts$header==T){
-  cov <- read.table(args$args[1], header=T, comment.char="")
+  cov <- read.table(args$args[1], header=T, comment.char="", check.names=F)
 }else{
-  cov <- read.table(args$args[1], header=F, comment.char="#")
+  cov <- read.table(args$args[1], header=F, comment.char="#", check.names=F)
 }
 
 # Function to compute medians per sample
