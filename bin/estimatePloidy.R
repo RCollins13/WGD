@@ -1046,7 +1046,7 @@ if(kmeans==T){
               paste(OUTDIR,"/sample_batch_assignments.txt",sep=""),
               col.names=T,row.names=F,sep="\t",quote=F)
   if(gzip==T){
-    system(paste("gzip -f ",OUTDIR,"/sample_batch_assignments.txt",sep=""),intern=F,wait=F)
+    system(paste("gzip -f ",OUTDIR,"/sample_batch_assignments.txt",sep=""))
   }
 
   #Write out list of PCs per sample
@@ -1055,7 +1055,7 @@ if(kmeans==T){
   write.table(samplePCs.out,paste(OUTDIR,"/sample_PCs.txt",sep=""),
               col.names=T,row.names=F,sep="\t",quote=F)
   if(gzip==T){
-    system(paste("gzip -f ",OUTDIR,"/sample_PCs.txt",sep=""),intern=F,wait=F)
+    system(paste("gzip -f ",OUTDIR,"/sample_PCs.txt",sep=""))
   }
 
   #Write out list of PC coordinates per cluster center
@@ -1066,7 +1066,7 @@ if(kmeans==T){
               paste(OUTDIR,"/batch_center_coordinates.txt",sep=""),
               col.names=T,row.names=F,sep="\t",quote=F)
   if(gzip==T){
-    system(paste("gzip -f ",OUTDIR,"/batch_center_coordinates.txt",sep=""),intern=F,wait=F)
+    system(paste("gzip -f ",OUTDIR,"/batch_center_coordinates.txt",sep=""))
   }
 }
 
@@ -1141,7 +1141,7 @@ colnames(sexes)[1] <- "#ID"
 write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""))
 }
 
 #Generate p-values, q-values, and rounded CNs for males/females for whole chromosomes
@@ -1169,21 +1169,21 @@ colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep="")
 write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""))
 }
 
 #Write merged q-values
 write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""))
 }
 
 #Write merged copy number estimates
 write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""))
 }
 
 #Plot binwise CN estimates per autosome -- all samples
@@ -1256,19 +1256,19 @@ colnames(merged.CN)[1] <- c("#Chr")
 write.table(merged.p,paste(OUTDIR,"/binwise_CNV_pValues.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_pValues.bed",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_pValues.bed",sep=""))
 }
 
 #Write merged q-values
 write.table(merged.q,paste(OUTDIR,"/binwise_CNV_qValues.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_qValues.bed",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_qValues.bed",sep=""))
 }
 
 #Write merged copy number estimates
 write.table(merged.CN,paste(OUTDIR,"/binwise_estimated_copy_numbers.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/binwise_estimated_copy_numbers.bed",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_estimated_copy_numbers.bed",sep=""))
 }
