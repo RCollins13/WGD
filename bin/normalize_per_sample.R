@@ -61,7 +61,7 @@ args <- parse_args(OptionParser(usage="%prog BINCOV MEDIANS OUTFILE",
 opts <- args$options
 
 ### Checks for appropriate positional arguments
-if(length(args$args) != 2){
+if(length(args$args) != 3){
   stop("Incorrect number of required positional arguments\n")
 }
 
